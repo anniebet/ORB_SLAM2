@@ -24,11 +24,14 @@
 #include<fstream>
 #include<chrono>
 
-#include<ros/ros.h>
+#include <ros/ros.h>
+#include <tf/transform_broadcaster.h>
+#include <std_msgs/String.h>
 #include <cv_bridge/cv_bridge.h>
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
+#include <image_transport/image_transport.h>
 
 #include<opencv2/core/core.hpp>
 
@@ -46,12 +49,22 @@ public:
     ORB_SLAM2::System* mpSLAM;
     bool do_rectify;
     cv::Mat M1l,M2l,M1r,M2r;
+
+    // setting up transform 
+
+
+    cv::Mat currentPosFrame;
+    tf::Transform transform_current;
+    tf::Quaternion q;
+    tf::TransformBroadcaster br;
+    
 };
 
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "RGBD");
     ros::start();
+    
 
     if(argc != 4)
     {
@@ -107,7 +120,45 @@ int main(int argc, char **argv)
         cv::initUndistortRectifyMap(K_r,D_r,R_r,P_r.rowRange(0,3).colRange(0,3),cv::Size(cols_r,rows_r),CV_32F,igb.M1r,igb.M2r);
     }
 
+
+
     ros::NodeHandle nh;
+    cout << "advertise node"<< endl;
+
+
+       
+    
+
+
+        //TESTING ROS NODE PUBLISH 
+    //os::Publisher chatter_pub = nh.advertise<std_msgs::String>("chatter", 1000);
+    // ros::Rate loop_rate(10);
+
+        // int count = 0;
+    
+       // std_msgs::String msg;
+       // std::stringstream ss;
+       // ss << "hello world of ROS " << count;
+       // msg.data = ss.str();
+
+       // ROS_INFO("%s", msg.data.c_str());
+       // chatter_pub.publish(msg);
+        
+        
+
+        // fill sensor message 
+        //sensor_msgs::ImagePtr msg;
+
+       // std_msgs::Header header;
+        //ros::Time timestamp;
+        //header.stamp = timestamp.now();
+        //header.frame_id = "dummy_frame";
+        //msg = cv_bridge::CvImage(header, "bgr8").toImageMsg();
+        //pub.publish(msg);
+                
+        // cv::Mat image = cv::imread(argv[1], CV_LOAD_IMAGE_COLOR);
+        // sensor_msgs::ImagePtr msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", image).toImageMsg();
+
 
     message_filters::Subscriber<sensor_msgs::Image> left_sub(nh, "/camera/left/image_raw", 1);
     message_filters::Subscriber<sensor_msgs::Image> right_sub(nh, "camera/right/image_raw", 1);
@@ -120,14 +171,18 @@ int main(int argc, char **argv)
     // Stop all threads
     SLAM.Shutdown();
 
+
     // Save camera trajectory
     SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory_TUM_Format.txt");
     SLAM.SaveTrajectoryTUM("FrameTrajectory_TUM_Format.txt");
     SLAM.SaveTrajectoryKITTI("FrameTrajectory_KITTI_Format.txt");
-
+    
     ros::shutdown();
 
+    // other bracket of ROS TESTING 
+
     return 0;
+    
 }
 
 void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const sensor_msgs::ImageConstPtr& msgRight)
@@ -161,12 +216,26 @@ void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const se
         cv::remap(cv_ptrLeft->image,imLeft,M1l,M2l,cv::INTER_LINEAR);
         cv::remap(cv_ptrRight->image,imRight,M1r,M2r,cv::INTER_LINEAR);
         mpSLAM->TrackStereo(imLeft,imRight,cv_ptrLeft->header.stamp.toSec());
+        
     }
-    else
-    {
+    else{
+    
         mpSLAM->TrackStereo(cv_ptrLeft->image,cv_ptrRight->image,cv_ptrLeft->header.stamp.toSec());
     }
 
+    currentPosFrame = mpSLAM->GetFrame();
+    cout << "matrix out is " << currentPosFrame << endl;
+    
+    cv::Size s = currentPosFrame.size();
+
+    if (s.width == 4)
+    {
+        transform_current.setOrigin(tf::Vector3(currentPosFrame.at<float>(0, 3),currentPosFrame.at<float>(1, 3), currentPosFrame.at<float>(2, 3)));
+        q.setRPY(0, 0, 0.1);
+        transform_current.setRotation(q);
+        br.sendTransform(tf::StampedTransform(transform_current, ros::Time::now(), "world", "camera"));
+    }
+       else {
+        cout << "tf matrix is empty " << endl;
+    }
 }
-
-
