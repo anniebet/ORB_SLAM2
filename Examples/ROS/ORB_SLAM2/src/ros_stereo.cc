@@ -126,13 +126,11 @@ int main(int argc, char **argv)
     cout << "advertise node"<< endl;
 
 
-       
-    
 
 
         //TESTING ROS NODE PUBLISH 
-    //os::Publisher chatter_pub = nh.advertise<std_msgs::String>("chatter", 1000);
-    // ros::Rate loop_rate(10);
+        //ros::Publisher chatter_pub = nh.advertise<std_msgs::String>("chatter", 1000);
+        // ros::Rate loop_rate(10);
 
         // int count = 0;
     
@@ -149,12 +147,12 @@ int main(int argc, char **argv)
         // fill sensor message 
         //sensor_msgs::ImagePtr msg;
 
-       // std_msgs::Header header;
+        //std_msgs::Header header;
         //ros::Time timestamp;
         //header.stamp = timestamp.now();
         //header.frame_id = "dummy_frame";
         //msg = cv_bridge::CvImage(header, "bgr8").toImageMsg();
-        //pub.publish(msg);
+        //time_pub.publish(msg);
                 
         // cv::Mat image = cv::imread(argv[1], CV_LOAD_IMAGE_COLOR);
         // sensor_msgs::ImagePtr msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", image).toImageMsg();
@@ -234,6 +232,7 @@ void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const se
         q.setRPY(0, 0, 0.1);
         transform_current.setRotation(q);
         br.sendTransform(tf::StampedTransform(transform_current, ros::Time::now(), "world", "camera"));
+        
     }
        else {
         cout << "tf matrix is empty " << endl;
