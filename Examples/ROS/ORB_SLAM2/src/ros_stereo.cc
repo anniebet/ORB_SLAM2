@@ -231,7 +231,7 @@ void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const se
         transform_current.setOrigin(tf::Vector3(currentPosFrame.at<float>(0, 3),currentPosFrame.at<float>(1, 3), currentPosFrame.at<float>(2, 3)));
         q.setRPY(0, 0, 0.1);
         transform_current.setRotation(q);
-        br.sendTransform(tf::StampedTransform(transform_current, ros::Time::now(), "world", "camera"));
+        br.sendTransform(tf::StampedTransform(transform_current, ros::Time::now(), "starting_cam","cam_optical"));
         
     }
        else {
