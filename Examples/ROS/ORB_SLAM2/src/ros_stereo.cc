@@ -36,6 +36,7 @@
 #include<opencv2/core/core.hpp>
 
 #include"../../../include/System.h"
+#include "../../../include/Converter.h"
 
 using namespace std;
 
@@ -57,6 +58,8 @@ public:
     tf::Transform transform_current;
     tf::Quaternion q;
     tf::TransformBroadcaster br;
+    vector<float> q_temp;
+    cv::Mat R;
     
 };
 
@@ -228,9 +231,13 @@ void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const se
 
     if (s.width == 4)
     {
-        transform_current.setOrigin(tf::Vector3(currentPosFrame.at<float>(0, 3),currentPosFrame.at<float>(1, 3), currentPosFrame.at<float>(2, 3)));
-        q.setRPY(0, 0, 0.1);
-        transform_current.setRotation(q);
+        transform_current.setOrigin(tf::Vector3(-currentPosFrame.at<float>(0, 3),-currentPosFrame.at<float>(1, 3), -currentPosFrame.at<float>(2, 3)));
+       
+
+        R = currentPosFrame(cv::Range(0,2), cv::Range(0,2));
+        q_temp = ORB_SLAM2::Converter::toQuaternion(R);
+    
+        transform_current.setRotation(tf::Quaternion(q_temp[0],q_temp[1],q_temp[2],q_temp[3]).inverse());
         br.sendTransform(tf::StampedTransform(transform_current, ros::Time::now(), "starting_cam","cam_optical"));
         
     }

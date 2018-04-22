@@ -82,7 +82,9 @@ ${LIBS}
 rosbuild_add_executable(Stereo
 src/ros_stereo.cc
 ../../../include/System.h
+../../../include/Converter.h
 ../../../src/System.cc
+../../../src/Converter.cc
 )
 
 target_link_libraries(Stereo
