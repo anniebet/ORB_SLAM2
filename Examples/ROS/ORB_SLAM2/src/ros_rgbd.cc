@@ -25,14 +25,18 @@
 #include<chrono>
 
 #include<ros/ros.h>
+#include <tf/transform_broadcaster.h>
+#include <std_msgs/String.h>
 #include <cv_bridge/cv_bridge.h>
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
+#include <image_transport/image_transport.h>
 
 #include<opencv2/core/core.hpp>
 
 #include"../../../include/System.h"
+#include "../../../include/Converter.h"
 
 using namespace std;
 
@@ -44,6 +48,15 @@ public:
     void GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const sensor_msgs::ImageConstPtr& msgD);
 
     ORB_SLAM2::System* mpSLAM;
+
+    // setting up transform 
+    cv::Mat currentPosFrame;
+    tf::Transform transform_current;
+    tf::Quaternion q;
+    tf::TransformBroadcaster br;
+    vector<float> q_temp;
+    cv::Mat R;
+
 };
 
 int main(int argc, char **argv)
@@ -110,6 +123,29 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
     }
 
     mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec());
+
+    // publish tf 
+    currentPosFrame = mpSLAM->GetFrame();
+    cout << "matrix out is " << currentPosFrame << endl;
+    
+    cv::Size s = currentPosFrame.size();
+
+    if (s.width == 4)
+    {
+        transform_current.setOrigin(tf::Vector3(-currentPosFrame.at<float>(0, 3),-currentPosFrame.at<float>(1, 3), -currentPosFrame.at<float>(2, 3)));
+       
+
+        R = currentPosFrame(cv::Range(0,2), cv::Range(0,2));
+        q_temp = ORB_SLAM2::Converter::toQuaternion(R);
+    
+        transform_current.setRotation(tf::Quaternion(q_temp[0],q_temp[1],q_temp[2],q_temp[3]).inverse());
+        br.sendTransform(tf::StampedTransform(transform_current, ros::Time::now(), "starting_cam","cam_optical"));
+        
+    }
+       else {
+        cout << "tf matrix is empty " << endl;
+    } 
+
 }
 
 
