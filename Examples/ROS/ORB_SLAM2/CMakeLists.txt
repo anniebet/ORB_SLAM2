@@ -94,6 +94,10 @@ ${LIBS}
 # Node for RGB-D camera
 rosbuild_add_executable(RGBD
 src/ros_rgbd.cc
+../../../include/System.h
+../../../include/Converter.h
+../../../src/System.cc
+../../../src/Converter.cc
 )
 
 target_link_libraries(RGBD

@@ -132,13 +132,17 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
 
     if (s.width == 4)
     {
-        transform_current.setOrigin(tf::Vector3(-currentPosFrame.at<float>(0, 3),-currentPosFrame.at<float>(1, 3), -currentPosFrame.at<float>(2, 3)));
-       
-
         R = currentPosFrame(cv::Range(0,2), cv::Range(0,2));
         q_temp = ORB_SLAM2::Converter::toQuaternion(R);
+        tf::Quaternion quat(q_temp[0],q_temp[1],q_temp[2],q_temp[3]);
+        tf::Vector3 vec(currentPosFrame.at<float>(0, 3),currentPosFrame.at<float>(1, 3), currentPosFrame.at<float>(2, 3));
+        vec.rotate(quat.inverse().getAxis(),quat.inverse().getAngle());
+        transform_current.setOrigin(-vec);
+
+        //transform_current.setOrigin(tf::Vector3(-currentPosFrame.at<float>(0, 3),-currentPosFrame.at<float>(1, 3), -currentPosFrame.at<float>(2, 3)));
+        transform_current.setRotation(quat.inverse());
     
-        transform_current.setRotation(tf::Quaternion(q_temp[0],q_temp[1],q_temp[2],q_temp[3]).inverse());
+       // transform_current.setRotation(tf::Quaternion(q_temp[0],q_temp[1],q_temp[2],q_temp[3]).inverse());
         br.sendTransform(tf::StampedTransform(transform_current, ros::Time::now(), "starting_cam","cam_optical"));
         
     }
